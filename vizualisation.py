@@ -135,3 +135,11 @@ def plot_lc(feature, df):
     plt.title(str(count_r) + ' red alerts and ' +
               str(count_g) + ' green alerts')
     plt.show()
+
+
+def save_error(error, folder):
+    plt.plot(error)
+    plt.xlabel('Epochs')
+    plt.ylabel('Error')
+    plt.title('Error in function of the number of epochs')
+    plt.savefig(folder + '/error.png')

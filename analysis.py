@@ -43,18 +43,59 @@ def load_data(folders):
 
     else:
         for folder in folders:
-            # Depth search the folder and load every .parquet file there is
+            # Depth search the folder and load the first 10 .parquet file in each folder
             for root, dirs, files in os.walk(folder):
-                for file in files:
-                    if file.endswith('.parquet'):
-                        df = df.append(pd.read_parquet(
-                            os.path.join(root, file)))
+                if file.endswith('.parquet'):
+                    df = pd.concat(
+                        [df, pd.read_parquet(os.path.join(root, file))])
 
     return df
 
 
-variable_star_class = ['EB*', 'Mira', 'RRLyr', 'YSO', 'LPV*', "TTau*"]
-AGN_class = ['QSO', 'BLLac', 'Blazar', 'AGN', 'Seyfert_1', 'AGN_Candidate']
+def load_subset_data(liste):
+    '''
+    Load the data from the folders
+
+    Parameters
+    ----------
+    liste : list of str
+        The class of the alert to load
+
+
+    Returns
+    -------
+    df : pandas dataframe
+        The dataframe containing the data
+    '''
+
+    # define df as an empty dataframe
+    df = pd.DataFrame()
+
+    dossier = '/home/centos/data/data_march'
+
+    for nom_fichier in liste:
+        chemin = os.path.join(dossier, "finkclass=" + nom_fichier)
+
+        temp = pd.read_parquet([chemin + "/" + os.listdir(chemin)[i]
+                               for i in range(min(10, len(os.listdir(chemin))))])
+
+        # concatenate the dataframes
+        df = pd.concat([df, temp], ignore_index=True)
+
+    kilonova = pd.read_parquet(
+        '/home/centos/data/balanced_data/finkclass=Kilonova candidate')
+    ambiguous = pd.read_parquet(
+        '/home/centos/data/balanced_data/finkclass=Ambiguous')
+    SN = pd.read_parquet(
+        '/home/centos/data/balanced_data/finkclass=SN candidate')
+
+    # Add a column 'finkclass' with the value Kilonova candidate
+    kilonova['finkclass'] = 'Kilonova candidate'
+    ambiguous['finkclass'] = 'Ambiguous'
+    SN['finkclass'] = 'SN candidate'
+    df = pd.concat([df, kilonova, ambiguous, SN], ignore_index=True)
+
+    return df
 
 
 def define_meta_class(ele, dic):
@@ -131,11 +172,11 @@ def feature_choice(df, columns):
         if type(col) == str:
             if col == 'lc_features_g':
                 to_concat.append(pd.DataFrame(
-                    new_df['lc_features_g'].tolist()).add_suffix('_g'))
+                    df['lc_features_g'].tolist()).add_suffix('_g'))
 
             elif col == 'lc_features_r':
                 to_concat.append(pd.DataFrame(
-                    new_df['lc_features_r'].tolist()).add_suffix('_g'))
+                    df['lc_features_r'].tolist()).add_suffix('_r'))
 
             else:
                 cols.append(col)
@@ -174,7 +215,7 @@ def normalize_data(df):
     df = (df - df.mean()) / df.std()
 
     # replace None or NaN by 0
-    df_filt = df_filt.fillna(0)
+    df = df.fillna(0)
 
     return df
 
@@ -207,7 +248,7 @@ def keep_important_variables(df, n_components=20, threshold=0.5):
     max_ind = np.argmax(np.abs(pca.components_[0]))
 
     # select variable with a high absolute value of at least half of the principal component with the highest absolute value
-    selected_variables = df_filt.columns[np.abs(
+    selected_variables = df.columns[np.abs(
         pca.components_[0]) > np.abs(pca.components_[0][max_ind]/2)]
 
     # create a new df with the selected variables
@@ -239,9 +280,9 @@ def create_pairs(x, y):
 
     for i in range(len(x)):
         for j in range(i+1, len(x)):
-            x_pairs.append([df_filt_selected_sample.iloc[i].to_list(),
-                           df_filt_selected_sample.iloc[j].to_list()])
-            y_pairs.append(1 if y[i] == y[j] else 0)
+            x_pairs.append([x.iloc[i].to_list(),
+                           x.iloc[j].to_list()])
+            y_pairs.append(1 if y.iloc[i] == y.iloc[j] else 0)
 
     return x_pairs, y_pairs
 
@@ -261,6 +302,26 @@ class dataset(Dataset):
 
     def __len__(self):
         return self.length
+
+
+class Net(nn.Module):
+    def __init__(self, nb_variables):
+        super(Net, self).__init__()
+
+        self.stack = nn.Sequential(nn.Linear(2*nb_variables, 4*nb_variables),
+                                   nn.ReLU(),
+                                   nn.Linear(4*nb_variables, 2*nb_variables),
+                                   nn.ReLU(),
+                                   nn.Linear(2*nb_variables, 1),
+                                   nn.Sigmoid())
+
+        self.nb_variables = nb_variables
+
+    def forward(self, x):
+        x = x.view(-1, 2*self.nb_variables)
+        x = self.stack(x)
+
+        return x
 
 
 def train_loop(dataloader, model, loss_fn, optimizer):
@@ -341,14 +402,17 @@ def test_loop(dataloader, model, loss_fn):
     return 100*(1-correct)
 
 
-def global_loop(dataload, model, loss_fn, optimizer, epochs=50):
+def global_loop(trainloader, testloader, model, loss_fn, optimizer, epochs=50):
     '''
     Train the model
 
     Parameters
     ----------
-    dataloader : DataLoader
-        The dataloader containing the data 
+    trainloader : DataLoader
+        The dataloader containing the training data
+
+    testloader : DataLoader
+        The dataloader containing the test data
 
     model : torch.nn.Module
         The model to train
@@ -374,8 +438,8 @@ def global_loop(dataload, model, loss_fn, optimizer, epochs=50):
     for t in range(epochs):
         print(f"Epoch {t+1}-----------------")
         # Use train_loop and test_loop functions
-        train_loop(trainloader, net, loss_fn, optimizer)
-        x = test_loop(testloader, net, loss_fn)
+        train_loop(trainloader, model, loss_fn, optimizer)
+        x = test_loop(testloader, model, loss_fn)
         error.append(x)
     print("Done!")
 
