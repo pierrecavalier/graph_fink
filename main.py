@@ -13,7 +13,12 @@ dic = {'variable_star_class': ['EB*', 'Mira', 'RRLyr', 'YSO', 'LPV*', "TTau*"],
        'AGN_class': ['QSO', 'BLLac', 'Blazar',
                      'AGN', 'Seyfert_1', 'AGN_Candidate']
        }
+
 df['finkclass'] = df['finkclass'].apply(define_meta_class, dic=dic)
+
+df = df.groupby('finkclass').head(200)
+df = df.reset_index(drop=True)
+print(df['finkclass'].value_counts())
 
 colors = color_map(df['finkclass'].value_counts().index.tolist())
 
@@ -48,13 +53,14 @@ df_filt_selected = keep_important_variables(df_filtered)
 label = df['finkclass']
 
 # take a random sample of 100 elements in df_filt_selected and label
-df_filt_selected_sample = df_filt_selected.sample(n=300)
+df_filt_selected_sample = df_filt_selected.sample(
+    n=len(df) - 200, random_state=42)
 label_sample = label[df_filt_selected_sample.index]
-
 
 # create an other sample with 100 different elements of df_filt_selected and label
 df_filt_selected_sample2 = df_filt_selected.drop(df_filt_selected_sample.index)
-df_filt_selected_sample2 = df_filt_selected_sample2.sample(n=100)
+df_filt_selected_sample2 = df_filt_selected_sample2.sample(
+    n=200, random_state=42)
 label_sample2 = label[df_filt_selected_sample2.index]
 
 
@@ -62,14 +68,14 @@ X_train, y_train = create_pairs(df_filt_selected_sample, label_sample)
 X_test, y_test = create_pairs(df_filt_selected_sample2, label_sample2)
 
 trainloader = DataLoader(dataset(X_train, y_train),
-                         batch_size=16, shuffle=False)
+                         batch_size=64, shuffle=False)
 
 testloader = DataLoader(dataset(X_test, y_test), batch_size=64, shuffle=False)
 
-net = Net(len(df_filt_selected.columns.tolist()))
+net = Bigger_Net(len(df_filt_selected.columns.tolist()))
 
 learning_rate = 0.001
-epochs = 500
+epochs = 1000
 loss_fn = nn.BCELoss()
 optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
 

@@ -1,23 +1,15 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import random
-import networkx as nx
 import os
 import plotly.express as px
-from fink_utils.photometry.conversion import dc_mag
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA
-from datetime import datetime
 from scipy.optimize import curve_fit
 import copy
-from gatspy import periodic
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 import torch
 import gzip
-import io
-from astropy.io import fits
 
 
 def load_data(folders):
@@ -423,7 +415,7 @@ def global_loop(trainloader, testloader, model, loss_fn, optimizer, epochs=50):
     optimizer : torch.optim
         The optimizer
 
-    epochs : int   
+    epochs : int
         The number of epochs
 
     Returns
