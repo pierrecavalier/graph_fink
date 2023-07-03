@@ -2,14 +2,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
-import plotly.express as px
 from sklearn.decomposition import PCA
-from scipy.optimize import curve_fit
-import copy
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import torch
-import gzip
 
 
 def load_data(folders):
@@ -35,11 +31,12 @@ def load_data(folders):
 
     else:
         for folder in folders:
-            # Depth search the folder and load the first 10 .parquet file in each folder
+            # Depth search the folder and load the first 10 .parquet
+            # file in each folder
             for root, dirs, files in os.walk(folder):
-                if file.endswith('.parquet'):
+                if files.endswith('.parquet'):
                     df = pd.concat(
-                        [df, pd.read_parquet(os.path.join(root, file))])
+                        [df, pd.read_parquet(os.path.join(root, files))])
 
     return df
 
@@ -69,7 +66,8 @@ def load_subset_data(liste):
         chemin = os.path.join(dossier, "finkclass=" + nom_fichier)
 
         temp = pd.read_parquet([chemin + "/" + os.listdir(chemin)[i]
-                               for i in range(min(10, len(os.listdir(chemin))))])
+                               for i in range(min(10,
+                                                  len(os.listdir(chemin))))])
 
         # concatenate the dataframes
         df = pd.concat([df, temp], ignore_index=True)
@@ -187,7 +185,8 @@ def feature_choice(df, columns):
 
 def normalize_data(df):
     '''
-    Normalize the data with by susbtracting the mean and dividing by the standard deviation
+    Normalize the data with by susbtracting the mean and
+    dividing by the standard deviation
 
     Parameters
     ----------
@@ -234,12 +233,13 @@ def keep_important_variables(df, n_components=20, threshold=0.5):
     '''
     pca = PCA(n_components=n_components)
     pca.fit(df)
-    df_pca = pca.transform(df)
 
-    # select the variable with the highest absolute value in the first principal component
+    # select the variable with the highest absolute value in
+    # the first principal component
     max_ind = np.argmax(np.abs(pca.components_[0]))
 
-    # select variable with a high absolute value of at least half of the principal component with the highest absolute value
+    # select variable with a high absolute value of at least
+    # half of the principal component with the highest absolute value
     selected_variables = df.columns[np.abs(
         pca.components_[0]) > np.abs(pca.components_[0][max_ind]/2)]
 
@@ -281,7 +281,7 @@ def create_pairs(x, y):
 
 class dataset(Dataset):
     '''
-    Define the dataset class to be exploited by DataLoader 
+    Define the dataset class to be exploited by DataLoader
     '''
 
     def __init__(self, x, y):
@@ -308,6 +308,28 @@ class Net(nn.Module):
                                    nn.Sigmoid())
 
         self.nb_variables = nb_variables
+
+    def forward(self, x):
+        x = x.view(-1, 2*self.nb_variables)
+        x = self.stack(x)
+
+        return x
+
+
+class Bigger_Net(nn.Module):
+    def __init__(self, nb_variables):
+        super(Bigger_Net, self).__init__()
+        self.nb_variables = nb_variables
+        self.stack = nn.Sequential(nn.Linear(2*nb_variables, 4*nb_variables),
+                                   nn.ReLU(),
+                                   nn.Linear(4*nb_variables, 8*nb_variables),
+                                   nn.ReLU(),
+                                   nn.Linear(8*nb_variables, 4*nb_variables),
+                                   nn.ReLU(),
+                                   nn.Linear(4*nb_variables, 2*nb_variables),
+                                   nn.ReLU(),
+                                   nn.Linear(2*nb_variables, 1),
+                                   nn.Sigmoid())
 
     def forward(self, x):
         x = x.view(-1, 2*self.nb_variables)
@@ -390,7 +412,8 @@ def test_loop(dataloader, model, loss_fn):
     test_loss /= num_batches
     correct /= size
     print(
-        f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f}")
+        f"Test Error: \n Accuracy: {(100*correct):>0.1f}%,",
+        f"Avg loss: {test_loss:>8f}")
     return 100*(1-correct)
 
 

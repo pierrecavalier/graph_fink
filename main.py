@@ -1,11 +1,19 @@
-from analysis import *
-from vizualisation import *
+from analysis import load_subset_data, define_meta_class, feature_choice
+from analysis import keep_important_variables, create_pairs
+from analysis import normalize_data, Bigger_Net, global_loop, save_error
+from vizualisation import color_map
+from torch.utils.data import dataset, DataLoader
+
+import torch
+import torch.nn as nn
+import numpy as np
 import datetime
 import os
 
 liste = [
     'EB*', 'Mira', 'SN candidate', 'QSO', 'BLLac', 'Blazar',
-    'Ambiguous', 'RRLyr', 'YSO', 'LPV*', 'AGN', 'Seyfert_1', 'AGN_Candidate', 'TTau*', 'Kilonova candidate'
+    'Ambiguous', 'RRLyr', 'YSO', 'LPV*', 'AGN', 'Seyfert_1', 'AGN_Candidate',
+    'TTau*', 'Kilonova candidate'
 ]
 
 df = load_subset_data(liste)
@@ -44,7 +52,8 @@ cols_in_candidate = [
 ]
 
 df_filtered = feature_choice(
-    df, cols + ['lc_features_g', 'lc_features_r', ['candidate', cols_in_candidate]])
+    df, cols + ['lc_features_g', 'lc_features_r',
+                ['candidate', cols_in_candidate]])
 
 df_filtered = normalize_data(df_filtered)
 
@@ -57,7 +66,8 @@ df_filt_selected_sample = df_filt_selected.sample(
     n=len(df) - 200, random_state=42)
 label_sample = label[df_filt_selected_sample.index]
 
-# create an other sample with 100 different elements of df_filt_selected and label
+# create an other sample with 100 different elements
+# of df_filt_selected and label
 df_filt_selected_sample2 = df_filt_selected.drop(df_filt_selected_sample.index)
 df_filt_selected_sample2 = df_filt_selected_sample2.sample(
     n=200, random_state=42)
