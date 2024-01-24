@@ -5,16 +5,16 @@ During a 4-month internship supervised by Julien Peloton and Julius Hrivnac, we 
 
 
 ## Usage 
-Data can be found [here](https://fink-portal.org/) and once put in a folder data, one can create his own graph, there are severals Neural Network notebook where the only notable change is the size of the layers and the depth of the network.
+Data can be download [here](https://fink-portal.org/) and once put in a folder data, one can create his own graph, there are severals Neural Network notebook where the only notable change is the size of the layers and the depth of the network.
 
-The neural network will simply check for every pair of element in the dataset, a number between 0 and 1, that can be interpreted as a similarity measurement will be associated. A arbitrary threshold at 0.9 will help to select will elements will be connected in the graph.
+The neural network will simply check for every pair of element (alert of an celestial body) in the dataset, a number between 0 and 1, that can be interpreted as a similarity measurement will be associated. A arbitrary threshold at 0.9 will help to select will elements will be connected in the graph.
 
 The report details the code and how it is used (but in french). Presentation slides are in english however.
 
 ## Example of graphs
 
 <p align="center">
-<img src=https://github.com/pierrecavalier/graph_fink/blob/main/figures/graph.png width="500">
+<img src=https://github.com/pierrecavalier/graph_fink/blob/main/figures/graph_hd.png width="1000">
 </p>
 
 
