@@ -5,6 +5,6 @@ During a 4-month internship, we tried to explore the analysis of graphs for the 
 
 Data can be found [here](https://fink-portal.org/) and once put in a folder data, one can create his own graph.
 
-The report details the code and how it is used.
+The report details the code and how it is used (but in french). Presentation slides are in english however.
 
 
